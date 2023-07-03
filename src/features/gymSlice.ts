@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store/store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface TrainingLog {
   startTime: string;
@@ -41,6 +42,9 @@ export const gymSlice = createSlice({
         log.endTime = endTime.toISOString();
         log.totalTime = diffInMinutes.toString();
         state.selectedParts = [];
+
+        // 退筋時、AsyncStorageに保存する
+        AsyncStorage.setItem('gymState', JSON.stringify(state));
       } else {
         // トレーニング開始時、ログをプッシュする
         const log = {
@@ -53,10 +57,15 @@ export const gymSlice = createSlice({
       }
       state.isTraining = !state.isTraining;
     },
+    setTrainingLog(state, action: PayloadAction<TrainingLog[]>) {
+      state.trainingLog = action.payload;
+      // ステートが更新されたらAsyncStorageに保存します
+      AsyncStorage.setItem('gymState', JSON.stringify(state));
+    },
   },
 });
 
-export const { selectPart, deselectPart, toggleTraining } = gymSlice.actions;
+export const { selectPart, deselectPart, toggleTraining, setTrainingLog } = gymSlice.actions;
 
 export const selectParts = (state: RootState) => state.gym.selectedParts;
 export const selectIsTraining = (state: RootState) => state.gym.isTraining;
