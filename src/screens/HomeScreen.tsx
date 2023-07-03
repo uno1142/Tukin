@@ -1,55 +1,73 @@
 // HomeScreen.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Animated, Easing, Alert } from 'react-native';
 import { RootState, AppDispatch } from '../store/store';
-import { selectPart, deselectPart, toggleTraining } from '../features/gymSlice';
-
-const PARTS = ['脚', '胸', '背中', '肩', '腕', '腹筋'];
-
-const PartButton: React.FC<{ part: string }> = ({ part }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const selectedParts = useSelector<RootState, string[]>((state) => state.gym.selectedParts);
-  const isTraining = useSelector<RootState, boolean>((state) => state.gym.isTraining);
-  const isSelected = selectedParts.includes(part);
-
-  const handlePress = () => {
-    if (isSelected) {
-      dispatch(deselectPart(part));
-    } else {
-      dispatch(selectPart(part));
-    }
-  };
-
-  return (
-    <TouchableOpacity
-      onPress={handlePress}
-      style={isSelected ? styles.selectedPartButton : styles.partButton}
-      disabled={isTraining}
-    >
-      <Text style={isSelected ? styles.avairableText : styles.notAvairableText}>{part}</Text>
-    </TouchableOpacity>
-  );
-};
+import { toggleTraining } from '../features/gymSlice';
+import { useNavigation } from '@react-navigation/native';
+import { HomeScreenNavigationProp } from '../navigation/types';
+import { PARTS, trainingTips } from '../constants/constants';
+import { PartButton } from '../components/PartButton';
 
 const HomeScreen: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const dispatch = useDispatch<AppDispatch>();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const isTraining = useSelector<RootState, boolean>((state) => state.gym.isTraining);
+  const scaleValue = useRef(new Animated.Value(0)).current;
   const hasSelectedParts = useSelector<RootState, boolean>(
     (state) => state.gym.selectedParts.length > 0,
   );
 
+  const randomTip = trainingTips[Math.floor(Math.random() * trainingTips.length)];
+
+  const handleTraining = useCallback(() => {
+    dispatch(toggleTraining());
+
+    // トレーニング終了時にダイアログを表示
+    if (isTraining) {
+      Alert.alert('お疲れさまでした！', `\n${randomTip}`, [{ text: 'OK', onPress: () => {} }]);
+    }
+  }, [dispatch, isTraining, randomTip]);
+
+  const startAnimation = useCallback(() => {
+    Animated.loop(
+      Animated.timing(scaleValue, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // トレーニング中の文字のアニメーション
+  useEffect(() => {
+    if (isTraining) {
+      startAnimation();
+    } else {
+      scaleValue.setValue(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTraining, startAnimation]);
+
+  // 表示時刻の更新処理
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000); // 1000ミリ秒ごとに更新する
+    }, 1000);
 
-    // useEffectのクリーンアップ関数でタイマーをクリアする
     return () => {
       clearInterval(timer);
     };
   }, []);
+
+  // scaleValueの値に応じてスケールを変える
+  const scale = scaleValue.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 1.5, 1],
+  });
 
   const formatTime = (date: Date) => {
     const hours = date.getHours().toString().padStart(2, '0');
@@ -58,20 +76,31 @@ const HomeScreen: React.FC = () => {
     return `${hours} : ${minutes}: ${seconds}`;
   };
 
-  const handleTraining = () => {
-    dispatch(toggleTraining());
-  };
-
   const viewTrainingHistory = () => {
-    // TODO: トレーニング履歴画面への遷移を実装
+    navigation.navigate('TrainingHistory');
   };
 
   return (
     <View style={styles.container}>
+      {isTraining && (
+        <Animated.Text
+          // eslint-disable-next-line react-native/no-inline-styles
+          style={{
+            transform: [{ scale: scale }],
+            fontSize: 24,
+            fontWeight: 'bold',
+            textAlign: 'center',
+            paddingBottom: 50,
+            color: 'green',
+          }}
+        >
+          トレーニング中
+        </Animated.Text>
+      )}
       <Text style={styles.time}>{formatTime(currentTime)}</Text>
       <View style={styles.partContainer}>
-        {PARTS.map((part) => (
-          <PartButton key={part} part={part} />
+        {PARTS.map((part, i) => (
+          <PartButton key={i} part={part} />
         ))}
       </View>
       <TouchableOpacity
@@ -101,6 +130,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
   },
+
   time: {
     fontSize: 48,
     fontWeight: 'bold',
@@ -121,18 +151,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     alignItems: 'center',
     backgroundColor: '#DDDDDD',
-    padding: 10,
-  },
-  partButton: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#DDDDDD',
-    padding: 10,
-  },
-  selectedPartButton: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: 'blue',
     padding: 10,
   },
   avairableText: {

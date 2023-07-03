@@ -32,12 +32,17 @@ export const gymSlice = createSlice({
     },
     toggleTraining: (state) => {
       if (state.isTraining) {
-        // If ending training, update the last log
+        // トレーニング終了時、ログを更新する
         const log = state.trainingLog[state.trainingLog.length - 1];
-        log.endTime = new Date().toISOString();
-        log.totalTime = ''; // Compute this based on startTime and endTime
+        let startTime = new Date(log.startTime);
+        let endTime = new Date();
+        let diff = Math.abs(endTime.getTime() - startTime.getTime());
+        let diffInMinutes = Math.floor(diff / 1000 / 60);
+        log.endTime = endTime.toISOString();
+        log.totalTime = diffInMinutes.toString();
+        state.selectedParts = [];
       } else {
-        // If starting training, create new log with start time
+        // トレーニング開始時、ログをプッシュする
         const log = {
           startTime: new Date().toISOString(),
           endTime: '',
