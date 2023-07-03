@@ -1,7 +1,16 @@
 // HomeScreen.tsx
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { StyleSheet, Text, View, TouchableOpacity, Animated, Easing, Alert } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Animated,
+  Easing,
+  Alert,
+  Button,
+} from 'react-native';
 import { RootState, AppDispatch } from '../store/store';
 import { toggleTraining } from '../features/gymSlice';
 import { useNavigation } from '@react-navigation/native';
@@ -18,6 +27,14 @@ const HomeScreen: React.FC = () => {
   const hasSelectedParts = useSelector<RootState, boolean>(
     (state) => state.gym.selectedParts.length > 0,
   );
+
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Button title="Calendar" onPress={() => navigation.navigate('Calendar')} />
+      ),
+    });
+  }, [navigation]);
 
   const randomTip = trainingTips[Math.floor(Math.random() * trainingTips.length)];
 
@@ -80,6 +97,14 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('TrainingHistory');
   };
 
+  const viewAddTrainingLogScreen = () => {
+    navigation.navigate('AddTrainingLog');
+  };
+
+  const clearLog = () => {
+    Alert.alert('履歴をクリアします');
+    dispatch(clearLog);
+  };
   return (
     <View style={styles.container}>
       {isTraining && (
@@ -119,6 +144,16 @@ const HomeScreen: React.FC = () => {
       >
         <Text style={styles.notAvairableText}>トレーニング履歴を確認</Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        onPress={viewAddTrainingLogScreen}
+        style={styles.backFromGymButton}
+        disabled={isTraining}
+      >
+        <Text style={styles.notAvairableText}>手動で履歴を追加</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={clearLog} style={styles.clearButton} disabled={isTraining}>
+        <Text style={styles.danger}>履歴をクリア</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -157,4 +192,6 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   notAvairableText: {},
+  clearButton: { marginTop: 16, alignItems: 'flex-end' },
+  danger: { color: 'red' },
 });

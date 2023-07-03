@@ -62,10 +62,25 @@ export const gymSlice = createSlice({
       // ステートが更新されたらAsyncStorageに保存します
       AsyncStorage.setItem('gymState', JSON.stringify(state));
     },
+    addTrainingLog: (state, action: PayloadAction<TrainingLog>) => {
+      state.trainingLog.push(action.payload);
+      AsyncStorage.setItem('gymState', JSON.stringify(state));
+    },
+    clearTrainingLog: (state) => {
+      state.trainingLog = [];
+      AsyncStorage.setItem('gymState', JSON.stringify(state));
+    },
   },
 });
 
-export const { selectPart, deselectPart, toggleTraining, setTrainingLog } = gymSlice.actions;
+export const {
+  selectPart,
+  deselectPart,
+  toggleTraining,
+  setTrainingLog,
+  addTrainingLog,
+  clearTrainingLog,
+} = gymSlice.actions;
 
 export const selectParts = (state: RootState) => state.gym.selectedParts;
 export const selectIsTraining = (state: RootState) => state.gym.isTraining;
